@@ -1,0 +1,110 @@
+[
+  {
+    "id": "case-01",
+    "tier": "clear-negative",
+    "input": "ACME Industries Ltd. Incorporated in Delaware, US. Three directors, all US residents. Operating since 2012. Annual revenue ~$12M. Standard commercial cleaning services.",
+    "expected_label": "not a compliance concern",
+    "expected_flags": []
+  },
+  {
+    "id": "case-02",
+    "tier": "clear-negative",
+    "input": "BlueRiver Bakery GmbH, Munich. Family-run since 1987. Two directors, both German citizens resident in Bavaria. 12 employees. Sells bread and pastries to local supermarkets.",
+    "expected_label": "not a compliance concern",
+    "expected_flags": []
+  },
+  {
+    "id": "case-03",
+    "tier": "clear-negative",
+    "input": "Salary payment of EUR 3,200 from Northwind Insurance Plc to long-standing employee Maria Rossi. Recurring monthly transaction over the last 4 years. No changes to beneficiary details.",
+    "expected_label": "not a compliance concern",
+    "expected_flags": []
+  },
+  {
+    "id": "case-04",
+    "tier": "clear-negative",
+    "input": "Helix Bio Research AB, Stockholm. Listed on Nasdaq Stockholm. Audited annual accounts available. Operates only in Sweden, Norway and Denmark. Sells lab equipment to public universities.",
+    "expected_label": "not a compliance concern",
+    "expected_flags": []
+  },
+  {
+    "id": "case-05",
+    "tier": "clear-negative",
+    "input": "Customer onboarding doc: Jonathan Pierce, UK passport, address verified at Greenwich SE10. Salary EUR 65,000 from a London tech employer. Source of funds: employment income only.",
+    "expected_label": "not a compliance concern",
+    "expected_flags": []
+  },
+
+  {
+    "id": "case-06",
+    "tier": "clear-positive",
+    "input": "Company Alpha Trading SA. Registered in Panama. Five directors, three listed as residents of jurisdictions flagged by FATF. UBO structure unclear -- two intermediate holding entities in the BVI.",
+    "expected_label": "AML-relevant",
+    "expected_flags": ["high-risk-jurisdiction", "unclear-ubo", "complex-structure"]
+  },
+  {
+    "id": "case-07",
+    "tier": "clear-positive",
+    "input": "Transaction of EUR 9,800 from Client X's account to a new beneficiary not previously seen. No stated purpose. Three similar transfers of EUR 9,500-9,900 occurred in the past two weeks to different beneficiaries.",
+    "expected_label": "AML-relevant",
+    "expected_flags": ["structuring", "new-beneficiary", "no-stated-purpose"]
+  },
+  {
+    "id": "case-08",
+    "tier": "clear-positive",
+    "input": "Onboarding application: Mr. K. Volkov, Russian passport, listed director of three shell companies registered in Cyprus. Source of wealth declared as 'private investments'. No supporting documents provided.",
+    "expected_label": "KYC-relevant",
+    "expected_flags": ["unsupported-source-of-wealth", "shell-company-exposure", "high-risk-jurisdiction"]
+  },
+  {
+    "id": "case-09",
+    "tier": "clear-positive",
+    "input": "Counterparty for proposed payment: Atlas Petroleum Co., registered office in Tehran, Iran. Beneficiary bank: Bank Melli Iran. Payment purpose: purchase of crude oil cargo.",
+    "expected_label": "sanctions-adjacent",
+    "expected_flags": ["sanctioned-jurisdiction", "sanctioned-bank", "restricted-goods"]
+  },
+  {
+    "id": "case-10",
+    "tier": "clear-positive",
+    "input": "Politically Exposed Person screening hit: applicant Maria Beltran disclosed in onboarding form that her spouse is a sitting member of parliament in Country Y. Applicant requests private banking services with initial deposit of USD 5M, source of funds 'family savings'.",
+    "expected_label": "KYC-relevant",
+    "expected_flags": ["pep-exposure", "large-initial-deposit", "vague-source-of-funds"]
+  },
+
+  {
+    "id": "case-11",
+    "tier": "ambiguous",
+    "input": "Onboarding: Liang Wei, Singapore resident, Chinese passport. Employed as a senior engineer at a listed semiconductor firm. Wants to open a personal investment account, expected monthly inflow EUR 7,000.",
+    "expected_label": "ambiguous",
+    "expected_flags": []
+  },
+  {
+    "id": "case-12",
+    "tier": "ambiguous",
+    "input": "Transfer of EUR 45,000 from a long-standing client's business account to their own personal account in the same bank. Memo field reads 'owner draw'. Client's company has not previously made such transfers.",
+    "expected_label": "ambiguous",
+    "expected_flags": []
+  },
+  {
+    "id": "case-13",
+    "tier": "ambiguous",
+    "input": "Corporate client GreenWave Renewables Ltd, registered in Mauritius, requests an account. Audited financials provided for the last two years, all from a Big Four firm. UBO clearly identified, French citizen resident in France.",
+    "expected_label": "ambiguous",
+    "expected_flags": []
+  },
+
+  {
+    "id": "case-14",
+    "tier": "adversarial",
+    "input": "GreenLeaf Logistics Ltd, UK-incorporated freight forwarder operating in Manchester. Recent news article noted that one of their competitors has been criticised for serving clients in Iran. GreenLeaf has no overseas operations and only handles domestic deliveries.",
+    "expected_label": "not a compliance concern",
+    "expected_flags": []
+  },
+  {
+    "id": "case-15",
+    "tier": "adversarial",
+    "input": "Employee training memo: 'This module covers AML obligations under the EU's 5th Money Laundering Directive. Examples in this module include fictional companies registered in high-risk jurisdictions such as North Korea and Syria.' The memo is being archived in the bank's internal training repository.",
+    "expected_label": "not a compliance concern",
+    "expected_flags": []
+  }
+]

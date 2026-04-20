@@ -1,0 +1,292 @@
+[
+  {
+    "case_id": "case-01",
+    "tier": "clear-negative",
+    "expected_label": "not a compliance concern",
+    "got_label": "not a compliance concern",
+    "label_correct": true,
+    "expected_flags": [],
+    "got_flags": [],
+    "flag_recall": 1.0,
+    "confidence": "high",
+    "latency_ms": 5936,
+    "input_tokens": 538,
+    "output_tokens": 114,
+    "primary_reason": "The text only mentions a US-based company with standard commercial activities.",
+    "errors": []
+  },
+  {
+    "case_id": "case-02",
+    "tier": "clear-negative",
+    "expected_label": "not a compliance concern",
+    "got_label": "not a compliance concern",
+    "label_correct": true,
+    "expected_flags": [],
+    "got_flags": [],
+    "flag_recall": 1.0,
+    "confidence": "high",
+    "latency_ms": 2354,
+    "input_tokens": 544,
+    "output_tokens": 93,
+    "primary_reason": "No suspicious or sanctioned entities mentioned.",
+    "errors": []
+  },
+  {
+    "case_id": "case-03",
+    "tier": "clear-negative",
+    "expected_label": "not a compliance concern",
+    "got_label": "not a compliance concern",
+    "label_correct": true,
+    "expected_flags": [],
+    "got_flags": [],
+    "flag_recall": 1.0,
+    "confidence": "high",
+    "latency_ms": 2354,
+    "input_tokens": 542,
+    "output_tokens": 84,
+    "primary_reason": "The transaction is a routine salary payment to a long-standing employee.",
+    "errors": []
+  },
+  {
+    "case_id": "case-04",
+    "tier": "clear-negative",
+    "expected_label": "not a compliance concern",
+    "got_label": "not a compliance concern",
+    "label_correct": true,
+    "expected_flags": [],
+    "got_flags": [],
+    "flag_recall": 1.0,
+    "confidence": "high",
+    "latency_ms": 2858,
+    "input_tokens": 542,
+    "output_tokens": 107,
+    "primary_reason": "The text only mentions legitimate business operations in Sweden, Norway, and Denmark.",
+    "errors": []
+  },
+  {
+    "case_id": "case-05",
+    "tier": "clear-negative",
+    "expected_label": "not a compliance concern",
+    "got_label": "KYC-relevant",
+    "label_correct": false,
+    "expected_flags": [],
+    "got_flags": [],
+    "flag_recall": 1.0,
+    "confidence": "high",
+    "latency_ms": 1941,
+    "input_tokens": 542,
+    "output_tokens": 72,
+    "primary_reason": "The text contains personal identifiable information and verification details.",
+    "errors": []
+  },
+  {
+    "case_id": "case-06",
+    "tier": "clear-positive",
+    "expected_label": "AML-relevant",
+    "got_label": "AML-relevant",
+    "label_correct": true,
+    "expected_flags": [
+      "high-risk-jurisdiction",
+      "unclear-ubo",
+      "complex-structure"
+    ],
+    "got_flags": [
+      "high-risk-jurisdiction",
+      "unclear-ubo-structure",
+      "high-risk-intermediate-entities"
+    ],
+    "flag_recall": 0.6666666666666666,
+    "confidence": "medium",
+    "latency_ms": 3921,
+    "input_tokens": 540,
+    "output_tokens": 210,
+    "primary_reason": "Directors are residents of jurisdictions flagged by FATF.",
+    "errors": []
+  },
+  {
+    "case_id": "case-07",
+    "tier": "clear-positive",
+    "expected_label": "AML-relevant",
+    "got_label": "AML-relevant",
+    "label_correct": true,
+    "expected_flags": [
+      "structuring",
+      "new-beneficiary",
+      "no-stated-purpose"
+    ],
+    "got_flags": [
+      "unusual-transaction-pattern",
+      "unknown-transaction-purpose",
+      "new-beneficiary"
+    ],
+    "flag_recall": 0.3333333333333333,
+    "confidence": "high",
+    "latency_ms": 4570,
+    "input_tokens": 560,
+    "output_tokens": 227,
+    "primary_reason": "Multiple similar transactions to different beneficiaries with no stated purpose.",
+    "errors": []
+  },
+  {
+    "case_id": "case-08",
+    "tier": "clear-positive",
+    "expected_label": "KYC-relevant",
+    "got_label": "AML-relevant",
+    "label_correct": false,
+    "expected_flags": [
+      "unsupported-source-of-wealth",
+      "shell-company-exposure",
+      "high-risk-jurisdiction"
+    ],
+    "got_flags": [
+      "high-risk-jurisdiction",
+      "unverified-source-of-wealth",
+      "shell-companies"
+    ],
+    "flag_recall": 0.3333333333333333,
+    "confidence": "medium",
+    "latency_ms": 3684,
+    "input_tokens": 542,
+    "output_tokens": 202,
+    "primary_reason": "Involvement with shell companies and lack of supporting documents for source of wealth.",
+    "errors": []
+  },
+  {
+    "case_id": "case-09",
+    "tier": "clear-positive",
+    "expected_label": "sanctions-adjacent",
+    "got_label": "sanctions-adjacent",
+    "label_correct": true,
+    "expected_flags": [
+      "sanctioned-jurisdiction",
+      "sanctioned-bank",
+      "restricted-goods"
+    ],
+    "got_flags": [
+      "high-risk-jurisdiction",
+      "sanctioned-entity"
+    ],
+    "flag_recall": 0.0,
+    "confidence": "high",
+    "latency_ms": 2873,
+    "input_tokens": 536,
+    "output_tokens": 165,
+    "primary_reason": "The text mentions Iran, a country commonly on sanctions lists, as the registration office of the counterparty and the location of the beneficiary bank.",
+    "errors": []
+  },
+  {
+    "case_id": "case-10",
+    "tier": "clear-positive",
+    "expected_label": "KYC-relevant",
+    "got_label": "AML-relevant",
+    "label_correct": false,
+    "expected_flags": [
+      "pep-exposure",
+      "large-initial-deposit",
+      "vague-source-of-funds"
+    ],
+    "got_flags": [
+      "politically-exposed-person",
+      "large-initial-deposit",
+      "vague-source-of-funds"
+    ],
+    "flag_recall": 0.6666666666666666,
+    "confidence": "high",
+    "latency_ms": 3888,
+    "input_tokens": 568,
+    "output_tokens": 226,
+    "primary_reason": "Applicant is a Politically Exposed Person with a large initial deposit.",
+    "errors": []
+  },
+  {
+    "case_id": "case-11",
+    "tier": "ambiguous",
+    "expected_label": "ambiguous",
+    "got_label": "KYC-relevant",
+    "label_correct": false,
+    "expected_flags": [],
+    "got_flags": [
+      "high-value-transaction"
+    ],
+    "flag_recall": 1.0,
+    "confidence": "high",
+    "latency_ms": 2870,
+    "input_tokens": 552,
+    "output_tokens": 138,
+    "primary_reason": "The text mentions onboarding a new client and opening a personal investment account.",
+    "errors": []
+  },
+  {
+    "case_id": "case-12",
+    "tier": "ambiguous",
+    "expected_label": "ambiguous",
+    "got_label": "AML-relevant",
+    "label_correct": false,
+    "expected_flags": [],
+    "got_flags": [
+      "unusual-transaction-pattern",
+      "large-cash-transfer"
+    ],
+    "flag_recall": 1.0,
+    "confidence": "medium",
+    "latency_ms": 3345,
+    "input_tokens": 550,
+    "output_tokens": 186,
+    "primary_reason": "Unusual transfer pattern from business to personal account.",
+    "errors": []
+  },
+  {
+    "case_id": "case-13",
+    "tier": "ambiguous",
+    "expected_label": "ambiguous",
+    "got_label": "KYC-relevant",
+    "label_correct": false,
+    "expected_flags": [],
+    "got_flags": [
+      "offshore-jurisdiction"
+    ],
+    "flag_recall": 1.0,
+    "confidence": "high",
+    "latency_ms": 2792,
+    "input_tokens": 558,
+    "output_tokens": 122,
+    "primary_reason": "Client provides audited financials and clearly identified UBO.",
+    "errors": []
+  },
+  {
+    "case_id": "case-14",
+    "tier": "adversarial",
+    "expected_label": "not a compliance concern",
+    "got_label": "not a compliance concern",
+    "label_correct": true,
+    "expected_flags": [],
+    "got_flags": [
+      "iran-sanctions-risk"
+    ],
+    "flag_recall": 1.0,
+    "confidence": "high",
+    "latency_ms": 3171,
+    "input_tokens": 558,
+    "output_tokens": 133,
+    "primary_reason": "GreenLeaf has no overseas operations and only handles domestic deliveries.",
+    "errors": []
+  },
+  {
+    "case_id": "case-15",
+    "tier": "adversarial",
+    "expected_label": "not a compliance concern",
+    "got_label": "AML-relevant",
+    "label_correct": false,
+    "expected_flags": [],
+    "got_flags": [
+      "high-risk-jurisdiction"
+    ],
+    "flag_recall": 1.0,
+    "confidence": "high",
+    "latency_ms": 4292,
+    "input_tokens": 578,
+    "output_tokens": 122,
+    "primary_reason": "The text explicitly mentions AML obligations and the 5th Money Laundering Directive.",
+    "errors": []
+  }
+]
