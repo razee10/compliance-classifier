@@ -37,7 +37,7 @@ A two-prompt pipeline, not a single prompt:
 ├── app.py                      # Streamlit UI
 ├── classifier.py               # Two-prompt pipeline + evidence grounding check
 ├── requirements.txt
-├── .env.example                # Copy to .env, add ANTHROPIC_API_KEY
+├── .env.example                # Copy to .env, add your provider key (Anthropic or NVIDIA)
 ├── PRODUCT.md                  # PM write-up
 └── eval/
     ├── test-cases.json         # 15 hand-written cases across 4 difficulty tiers
@@ -70,20 +70,20 @@ The classifier is provider-agnostic. Pick one of two backends via the `LLM_PROVI
 | Provider | Env vars | Notes |
 |----------|----------|-------|
 | `anthropic` (default) | `ANTHROPIC_API_KEY`, optional `ANTHROPIC_MODEL` (default `claude-sonnet-4-6`) | Paid API; get a key at [console.anthropic.com](https://console.anthropic.com/). |
-| `nvidia` | `NVIDIA_API_KEY`, optional `NVIDIA_MODEL` (default `minimaxai/minimax-m2.7`), `NVIDIA_BASE_URL` | OpenAI-compatible endpoint. Free-tier credits at [build.nvidia.com](https://build.nvidia.com/). |
+| `nvidia` | `NVIDIA_API_KEY`, optional `NVIDIA_MODEL` (default `meta/llama-3.3-70b-instruct`), `NVIDIA_BASE_URL` | OpenAI-compatible endpoint. Free-tier credits at [build.nvidia.com](https://build.nvidia.com/). |
 
 `.env.example` has both blocks commented-in. To use NVIDIA:
 
 ```dotenv
 LLM_PROVIDER=nvidia
 NVIDIA_API_KEY=nvapi-...
-NVIDIA_MODEL=minimaxai/minimax-m2.7
+NVIDIA_MODEL=meta/llama-3.3-70b-instruct
 ```
 
 The eval harness reads the same env vars, but you can override per run:
 
 ```bash
-python eval/run_eval.py --provider nvidia --model minimaxai/minimax-m2.7
+python eval/run_eval.py --provider nvidia --model meta/llama-3.3-70b-instruct
 ```
 
 ## Running the eval
@@ -91,12 +91,12 @@ python eval/run_eval.py --provider nvidia --model minimaxai/minimax-m2.7
 ```bash
 python eval/run_eval.py
 # or pin a specific backend for this run:
-python eval/run_eval.py --provider nvidia --model minimaxai/minimax-m2.7
+python eval/run_eval.py --provider nvidia --model meta/llama-3.3-70b-instruct
 ```
 
 This runs all 15 cases through the live model and writes a Markdown + JSON report to `eval/results/`. The report includes per-tier accuracy, per-miss breakdown with the model's stated reason, average latency, and an estimated cost per 1,000 runs based on the model's published per-token pricing (free-tier providers show $0).
 
-The eval is small on purpose — 15 hand-written cases, ~$0.01 per full run on Anthropic (free on NVIDIA), ~30 seconds. Big enough to surface failure modes, small enough to iterate on between prompt tweaks.
+The eval is small on purpose — 15 hand-written cases, ~$0.01 per full run on Anthropic (free on NVIDIA), ~1 minute wall time. Big enough to surface failure modes, small enough to iterate on between prompt tweaks.
 
 ## Deployment
 
@@ -104,7 +104,7 @@ This repo is set up to deploy to **Streamlit Community Cloud** (free tier):
 
 1. Push to GitHub.
 2. Go to <https://share.streamlit.io>, point it at this repo, set `app.py` as the entrypoint.
-3. Add `ANTHROPIC_API_KEY` under **App settings → Secrets**.
+3. Under **App settings → Secrets**, add the backend you're using — either `ANTHROPIC_API_KEY` (paid) or `LLM_PROVIDER=nvidia` + `NVIDIA_API_KEY` + `NVIDIA_MODEL=meta/llama-3.3-70b-instruct` (free tier).
 
 A live URL will be added here once the app is deployed.
 
