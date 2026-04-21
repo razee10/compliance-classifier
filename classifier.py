@@ -78,8 +78,9 @@ Return valid JSON only, matching this schema:
 
 Rules:
 - Only classify as "sanctions-adjacent" if the text explicitly mentions a country, entity, or individual commonly on sanctions lists. Do not speculate.
-- If a sanctioned country/entity name appears only as background or news context (not as a counterparty, jurisdiction of operation, or beneficiary), do NOT classify as sanctions-adjacent.
-- Use "ambiguous" when signals point to multiple categories or are weak.
+- "KYC-relevant", "AML-relevant", and "sanctions-adjacent" mean there is a CONCERN that needs review. Routine information (verified identity, salary income, stable employment, standard documentation) is NOT a concern -- classify as "not a compliance concern".
+- Context-vs-substance rule applies to all categories: if a compliance keyword (high-risk country, sanctions term, AML terminology) appears in the text only as training material, news commentary, or hypothetical example -- not as a counterparty, jurisdiction of operation, or party to the described activity -- do NOT flag the case. Training memos discussing compliance are not themselves compliance concerns.
+- Use "ambiguous" when signals point to multiple categories or are weak. "ambiguous" includes cases where a signal exists but lacks context to judge severity. If a case has exactly one soft signal and no corroborating context, prefer "ambiguous" over committing to a category.
 - Confidence is "low" if you'd want a human reviewer; "high" only if the signal is unambiguous.
 - Return ONLY the JSON object. No prose before or after.
 """
