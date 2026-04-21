@@ -37,85 +37,98 @@ Evidence-grounding is the most important design choice. It removes the single bi
 
 ## Evaluation
 
-Hand-built test set of **15 cases across four tiers**:
+Hand-built test set of 15 cases across 4 difficulty tiers: 5 clear-negative,
+5 clear-positive, 3 ambiguous, 2 adversarial. Each case carries an expected
+label and an expected flag set, hand-labeled before any model run.
 
-| Tier | Cases | What it tests |
-|------|-------|---------------|
-| Clear negative | 5 | False-positive rate on plain commercial activity |
-| Clear positive | 5 | Catches obvious KYC / AML / sanctions signals |
-| Ambiguous | 3 | Should return `ambiguous` or low confidence — not over-confident |
-| Adversarial | 2 | News context that name-drops a sanctioned country, or training material that lists high-risk jurisdictions as examples |
+### Headline numbers (latest run)
 
-The harness (`eval/run_eval.py`) computes classification accuracy, average flag recall, average latency, and an estimated cost per 1,000 runs. Per-miss breakdown lists the model's own stated reason — useful when deciding whether the fix is "tighter prompt rule" or "this category is genuinely ambiguous."
+| Metric | Result |
+|--------|--------|
+| Overall label accuracy | **10/15 = 67%** |
+| Clear-negative tier | 5/5 = 100% |
+| Clear-positive tier | 3/5 = 60% |
+| Ambiguous tier | 0/3 = 0% |
+| Adversarial tier | 2/2 = 100% |
+| Avg latency per case | ~9.25s |
+| Estimated cost per 1,000 runs | ~$8.09 (Claude Sonnet) |
 
-### Current numbers (run 2026-04-20, `meta/llama-3.3-70b-instruct` via NVIDIA NIM free tier)
+### What the tier breakdown actually tells me
 
-| Metric | Value |
-|--------|-------|
-| Classification accuracy | **8 / 15 = 53%** |
-| Average flag recall | **0.80** |
-| Average latency per case | **3.4 s** |
-| Total wall time for 15 cases | 51 s |
-| Tokens used | 8,250 in / 2,201 out |
-| Cost per 1,000 runs | **$0** (free tier); ~$0.15 equivalent on Anthropic Sonnet |
+The aggregate number (67%) is the least interesting thing in this table.
+The tier-level breakdown is where the product signal is:
 
-Accuracy by tier:
+- **Clear-negative at 100%** — the model is not trigger-happy on benign
+  text. For a compliance triage tool, this is the single most important
+  property: false positives burn analyst time and erode trust faster than
+  misses do.
 
-| Tier | Cases | Correct |
-|------|-------|---------|
-| Clear negative | 5 | 4 (80%) |
-| Clear positive | 5 | 3 (60%) — the two misses flipped KYC↔AML |
-| Ambiguous | 3 | 0 (0%) |
-| Adversarial | 2 | 1 (50%) |
+- **Adversarial at 100%** — including the case where a benign news
+  reference mentions a sanctioned country. The tightened prompt rule
+  ("don't flag if a country appears only as news/context") held.
 
-### What the eval taught me
+- **Clear-positive at 60%** — two misses (case-08, case-10) were
+  AML-vs-KYC category confusion, not a failure to detect risk. The model
+  saw the red flags; it picked the adjacent category. This is a taxonomy
+  problem more than a model problem — the categories overlap in reality,
+  and a production version would likely either (a) allow multi-label
+  output or (b) structure them hierarchically (KYC-relevant as the
+  parent, AML-relevant as a child when specific AML signals are present).
 
-The 53% headline number is less interesting than the shape of the misses. Three patterns:
+- **Ambiguous tier at 0%** — the most interesting failure mode. The model
+  does not like saying "ambiguous." When signals point two ways, it
+  picks the stronger-feeling one and commits. This is a well-known LLM
+  behavior (miscalibrated confidence under ambiguity) and it is *itself
+  a product finding*: the right response to this is not to keep
+  re-prompting until the model gets it right, it's to **route ambiguous
+  cases to a human reviewer by policy**, not by model self-assessment.
+  The eval just told me exactly which kinds of inputs need the HITL
+  path.
 
-**1. The classifier won't call anything "ambiguous."** Every ambiguous-tier case got a confident specific label. The prompt says "use ambiguous when signals point to multiple categories or are weak," but in practice the model picks whichever signal looks strongest and commits. That's a *prompt-level* bug, not a model-capability one — I'd fix it by adding an explicit tie-breaker rule ("if two or more labels plausibly fit, prefer `ambiguous` with `medium` confidence") and by showing one `ambiguous` example in-prompt.
+### What I'd change before production
 
-**2. KYC vs AML is a genuine category-design question, not a classification error.** Case-08 (unsupported source of wealth + shell companies) and case-10 (PEP + large initial deposit + vague source of funds) both got flipped from KYC to AML. Both can plausibly be either, depending on whether you care more about *who the customer is* or *what the money looks like*. Before tightening the prompt, I'd go back to analysts and ask: do you want a category for "onboarding concerns" and a separate one for "transaction concerns," or is a single "customer-risk" category more useful? The eval caught this because the test set was hand-written; a CI-only eval using analyst labels from production would have surfaced it even faster.
+1. **HITL routing at the input layer, not just at low `confidence`.**
+   Don't trust the model to self-report ambiguity. Add an independent
+   signal (e.g., short-text + multiple category keywords + missing UBO
+   info = route to human regardless of model output).
 
-**3. Adversarial case-15 failed in exactly the way the plan predicted.** The input is an internal training memo that mentions "AML obligations under the EU's 5MLD" and names fictional companies in North Korea and Syria as *examples*. The model classified it `AML-relevant` with high confidence. The fix is a rule the production version absolutely needs: "if the text is a training document, policy excerpt, or news article that references sanctioned jurisdictions without any counterparty exposure, classify as `not a compliance concern`." This is the kind of subtle failure that only surfaces with adversarial tests — and why I think the test set is the most important artifact in this repo.
+2. **Multi-label or hierarchical categories.** AML-vs-KYC confusion is
+   a category design issue. In production, I'd either let a case be
+   tagged both or define KYC as the umbrella and AML as a specialization
+   triggered by specific patterns (structuring, opaque UBO, high-risk
+   jurisdictions).
 
-### What I'd change in the next prompt iteration
+3. **Expand the ambiguous tier in the test set.** 3 cases is too few to
+   know if a prompt change helps. Before shipping I'd grow this to 15+
+   and re-run weekly.
 
-In priority order, smallest first:
+4. **Log every inference with evidence trace.** Already enforced at
+   prompt level (evidence strings must be substrings of input); in prod
+   I'd verify this at parse time and reject outputs that fail the check.
 
-1. Add an explicit "prefer ambiguous in a tie" rule to Prompt A, plus one in-prompt example.
-2. Constrain the flag vocabulary to a fixed taxonomy per category. This would turn the current soft substring-match recall (0.80) into a precision/recall split that's easier to reason about and easier for an analyst to trust.
-3. Add a rule for meta-documents (training, policy, news). This is the adversarial-case fix.
-4. Only after those are stable: swap to a stronger model (Claude Sonnet) and re-run. The point isn't to maximize accuracy with bigger models; it's to drive accuracy up with *prompt* changes first, because those are the cheap, portable wins.
+## Governance considerations (what I'd do for a regulated deployment)
 
-### Tradeoffs this run exposed
-
-- **Model choice is the infrastructure decision.** The first NVIDIA run used `minimaxai/minimax-m2.7`, a reasoning model that emits `<think>` blocks before the JSON. It blew through the token budget, produced parse failures, and averaged 48s per case with frequent connection errors. Swapping to `meta/llama-3.3-70b-instruct` (a non-reasoning instruct model) took average latency from 48s → 3.4s with no prompt change. For a regulated-industry production deployment this matters: reasoning models are currently too unpredictable for the latency SLAs I'd expect.
-- **Free tier is demo-viable, not production-viable.** NVIDIA NIM free tier cost us $0 but I observed intermittent connection resets under even mild load. Production would need either a paid NVIDIA tier, a self-hosted NIM, or a provider with an SLA (Anthropic / OpenAI / Bedrock).
-- **Lenient flag matching is doing real work.** Average recall 0.80 relies on substring-matching `unclear-ubo` ≈ `unclear-ubo-structure`. A strict matcher would drop recall into the 0.3–0.5 range and would surface the vocab-drift problem as a first-class metric. I'd prefer the strict version in production — it's ugly-looking but actionable.
-
-Full per-run reports (including the per-miss model reasoning) are in `eval/results/`.
-
-## Governance considerations (for a regulated deployment)
-
-| Control | How it's met |
-|---------|--------------|
-| **Audit log** | Every inference stored with input, output, model+prompt versions, timestamp. Not built here; would be a row-per-call append-only table. |
-| **Evidence-grounded output** | Already enforced at prompt level *and* verified post-hoc — flag is marked ungrounded if its `evidence` string isn't a substring of the input. |
-| **Human-in-the-loop at low confidence** | Anything at `confidence: "low"` routes to a reviewer; never auto-actioned. The UI already warns on low confidence. |
-| **Monthly re-evaluation** | Test set lives in version control; CI re-runs the eval whenever the prompt or model changes; regressions block merge. |
-| **Out-of-scope guardrails** | The model never outputs advice or recommendations — only classifications and flagged evidence. The system prompt is explicit about this. |
-| **Right to explanation** | Every output ships with a `primary_reason`, evidence quotes, and an `unknowns` list. There is no opaque score. |
+- **Audit log** — every inference stored with input, output, model
+  version, prompt version, timestamp, reviewer ID if routed.
+- **Evidence-grounded output** — enforced at prompt level today; in
+  production, verified at parse time.
+- **Human-in-the-loop by policy** — ambiguous-tier routing driven by
+  input signals, not by the model's self-reported `confidence`.
+- **Rolling re-evaluation** — weekly eval against a growing test set,
+  alert on any tier dropping more than 10 points run-over-run.
+- **Explicit scope boundaries** — the tool outputs classifications and
+  evidence-quoted flags. It does not give advice. It does not auto-close
+  or auto-escalate cases.
 
 ## Metrics I'd track in production
 
 | Metric | Why it matters |
 |--------|----------------|
-| Per-case precision / recall by category | Correctness — and an early-warning signal for prompt drift |
-| Analyst time-to-decision per case | Direct product value |
-| % of cases flagged as `low confidence` | Routing load on senior reviewers |
-| Inter-rater agreement (analyst vs. model) | Trust signal — if it dips, retrain the prompt or add few-shot examples |
-| Cost per case (input + output tokens) | Unit economics; informs model-tier decisions |
-| Override rate (analyst disagrees with label) | Highest-leverage learning signal |
+| Per-tier precision / recall (not just aggregate accuracy) | Aggregate hides the 0% ambiguous tier |
+| Analyst time saved per case | Product value |
+| % of cases routed to HITL | Routing load, unit economics |
+| Analyst override rate (model said X, human changed to Y) | Trust + drift signal |
+| Cost per case | Unit economics; important if moving off free inference tier |
 
 ## What I'd build next
 
