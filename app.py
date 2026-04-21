@@ -68,6 +68,30 @@ EXAMPLES = {
         "Recent news article noted that one of their competitors has been criticised for serving "
         "clients in Iran. GreenLeaf has no overseas operations."
     ),
+    "Complex case (long-form memo)": (
+        """1. Corporate Identity and Registration
+
+Alpha Trading SA (hereinafter "the Subject") is a legal entity organized and existing under the laws of the Republic of Panama, registered under Folio No. 1558292. The company's stated primary business objective is "international logistics and commodities brokerage," specifically focusing on energy sector derivatives within emerging markets. While the Subject maintains a registered office in Panama City, initial digital footprint analysis suggests a lack of significant physical operational infrastructure commensurate with its declared multi-million dollar turnover.
+
+2. Governance and Management Composition
+
+The Subject is governed by a Board of Directors consisting of five (5) appointed individuals. A cross-reference of residency permits and tax IDs reveals a high concentration of geographic risk. While the Chairman (Marcus Thorne) and the Secretary (Ana Sophia Rivera) are residents of Panama and Spain respectively, the remaining three directors maintain primary residences in jurisdictions currently subject to increased monitoring by the FATF (Financial Action Task Force).
+
+- Director A (Yaroslav Petrov): Resident of a high-risk jurisdiction in Central Eurasia.
+- Director B (Li Na): Resident of a jurisdiction flagged for strategic AML/CFT deficiencies.
+- Director C (Omar Al-Fayed): Resident of a region currently on the FATF Grey List.
+
+The presence of a majority (60%) of the board in high-risk zones poses a significant challenge for ongoing monitoring and the verification of "fit and proper" status.
+
+3. Ownership Complexity and Layering
+
+The Ultimate Beneficial Ownership (UBO) structure of Alpha Trading SA is currently classified as Obscured. The Subject's share capital is not held directly by natural persons but is partitioned through a series of offshore vehicles:
+
+- Primary Shareholder: 100% of Alpha Trading SA is owned by Apex Prime Holdings Ltd, registered in the British Virgin Islands (BVI).
+- Secondary Layer: Apex Prime Holdings Ltd is, in turn, a subsidiary of Global Shell Foundations Inc, also domiciled in the BVI.
+
+Initial inquiries to the BVI Registry have failed to produce a Register of Members or a clear Declaration of Trust. The use of two consecutive intermediate holding entities in a "tax neutral" jurisdiction is a classic indicator of Layering, intended to decouple the assets from the beneficial owner. Consequently, the identity of the natural persons who ultimately own or control 25% or more of the Subject cannot be verified with the documentation currently on file."""
+    ),
 }
 
 with st.sidebar:
