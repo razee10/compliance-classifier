@@ -3,8 +3,10 @@
 Run locally:
     streamlit run app.py
 
-Set `LLM_PROVIDER=anthropic` (default) or `LLM_PROVIDER=nvidia` in `.env`.
-Each provider needs its own API key -- see `.env.example`.
+Provider/model can be chosen at runtime from the sidebar. The dropdown only
+shows providers whose API key is available (in `.env`, the shell env, or
+Streamlit Cloud secrets). Env defaults (`LLM_PROVIDER`, `ANTHROPIC_MODEL`,
+`NVIDIA_MODEL`) still drive the initial selection.
 """
 
 from __future__ import annotations
@@ -14,7 +16,13 @@ import os
 import streamlit as st
 from dotenv import load_dotenv
 
-from classifier import DEFAULT_MODEL, DEFAULT_PROVIDER, _build_client, classify
+from classifier import (
+    ANTHROPIC_MODEL_DEFAULT,
+    DEFAULT_PROVIDER,
+    NVIDIA_MODEL_DEFAULT,
+    _build_client,
+    classify,
+)
 
 load_dotenv()
 
@@ -30,22 +38,45 @@ st.caption(
     "Returns a category, confidence, and red flags with evidence quoted from the source."
 )
 
-# --- API key sanity check. Actual resolution happens inside _build_client / the SDK.
-# Streamlit Cloud users can also put keys in `.streamlit/secrets.toml` and os.environ
-# will pick them up automatically if mirrored there.
-required_key = "NVIDIA_API_KEY" if DEFAULT_PROVIDER == "nvidia" else "ANTHROPIC_API_KEY"
-if not os.environ.get(required_key):
-    # Try Streamlit secrets as a fallback.
-    try:
-        os.environ[required_key] = st.secrets[required_key]
-    except (KeyError, FileNotFoundError, st.errors.StreamlitSecretNotFoundError):
-        pass
+# --- Provider catalog. Model lists are convenience presets; users can override with "Custom...".
+PROVIDERS: dict[str, dict] = {
+    "anthropic": {
+        "key_env": "ANTHROPIC_API_KEY",
+        "models": [
+            "claude-sonnet-4-6",
+            "claude-opus-4-7",
+            "claude-haiku-4-5-20251001",
+        ],
+        "default_model": ANTHROPIC_MODEL_DEFAULT,
+    },
+    "nvidia": {
+        "key_env": "NVIDIA_API_KEY",
+        "models": [
+            "meta/llama-3.3-70b-instruct",
+        ],
+        "default_model": NVIDIA_MODEL_DEFAULT,
+    },
+}
 
-if not os.environ.get(required_key):
+# Pull API keys from Streamlit Cloud secrets into env if not already set, so the
+# SDKs pick them up transparently.
+for _cfg in PROVIDERS.values():
+    _key_env = _cfg["key_env"]
+    if not os.environ.get(_key_env):
+        try:
+            os.environ[_key_env] = st.secrets[_key_env]
+        except (KeyError, FileNotFoundError, st.errors.StreamlitSecretNotFoundError):
+            pass
+
+available_providers = [
+    p for p, cfg in PROVIDERS.items() if os.environ.get(cfg["key_env"])
+]
+
+if not available_providers:
     st.error(
-        f"No `{required_key}` found. Set it in `.env` locally, "
-        f"or in Streamlit secrets when deployed. "
-        f"Active provider: `{DEFAULT_PROVIDER}`."
+        "No API key found for any supported provider. "
+        "Set `ANTHROPIC_API_KEY` or `NVIDIA_API_KEY` in `.env` locally, "
+        "or in Streamlit Cloud secrets."
     )
     st.stop()
 
@@ -97,8 +128,46 @@ Initial inquiries to the BVI Registry have failed to produce a Register of Membe
 with st.sidebar:
     st.subheader("Examples")
     pick = st.selectbox("Load an example", options=["-- choose --"] + list(EXAMPLES.keys()))
+
     st.subheader("Backend")
-    st.code(f"provider: {DEFAULT_PROVIDER}\nmodel:    {DEFAULT_MODEL}", language=None)
+    default_provider_idx = (
+        available_providers.index(DEFAULT_PROVIDER)
+        if DEFAULT_PROVIDER in available_providers
+        else 0
+    )
+    selected_provider = st.selectbox(
+        "Provider",
+        options=available_providers,
+        index=default_provider_idx,
+        help="Only providers with an API key in env/secrets appear here.",
+    )
+
+    provider_cfg = PROVIDERS[selected_provider]
+    preset_models = provider_cfg["models"]
+    default_model = provider_cfg["default_model"]
+    model_options = preset_models + ["Custom..."]
+    default_model_idx = (
+        preset_models.index(default_model) if default_model in preset_models else 0
+    )
+    model_choice = st.selectbox(
+        "Model",
+        options=model_options,
+        index=default_model_idx,
+        help="Pick a preset or 'Custom...' to paste any model ID the provider accepts.",
+        key=f"model_choice_{selected_provider}",
+    )
+    if model_choice == "Custom...":
+        selected_model = st.text_input(
+            "Custom model ID",
+            value=default_model,
+            help=(
+                "For NVIDIA: any NIM-hosted model ID (e.g. `meta/llama-3.1-405b-instruct`). "
+                "For Anthropic: any model your key has access to."
+            ),
+            key=f"custom_model_{selected_provider}",
+        ).strip()
+    else:
+        selected_model = model_choice
 
 if "doc_text" not in st.session_state:
     st.session_state.doc_text = ""
@@ -112,12 +181,21 @@ doc_text = st.text_area(
     placeholder="Paste a company profile, transaction summary, or KYC extract...",
 )
 
-run = st.button("Classify", type="primary", disabled=not doc_text.strip())
+run = st.button(
+    "Classify",
+    type="primary",
+    disabled=not (doc_text.strip() and selected_model),
+)
 
 if run:
-    client = _build_client(DEFAULT_PROVIDER)
-    with st.spinner("Running two-prompt pipeline..."):
-        result = classify(doc_text, client=client)
+    client = _build_client(selected_provider)
+    with st.spinner(f"Running two-prompt pipeline on `{selected_provider}` / `{selected_model}`..."):
+        result = classify(
+            doc_text,
+            client=client,
+            provider=selected_provider,
+            model=selected_model,
+        )
 
     col1, col2, col3 = st.columns(3)
     col1.metric("Label", result.label)
